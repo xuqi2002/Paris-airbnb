@@ -1,7 +1,7 @@
 ---
 title: "Airbnb listings in Paris, France"
 author: "Xu Qi"
-thanks: "Code and data from this analysis are available at: https://github.com/xuqi2002/toronto_library_visit" 
+thanks: "Code and data from this analysis are available at:https://github.com/xuqi2002/Paris-airbnb"
 date: "today"
 date-format: "long" 
 format: pdf
@@ -28,7 +28,7 @@ library(modelsummary)
 library(janitor)
 
 # Read in cleaned data #
-airbnb_data_selected <- read_parquet(here::here("2023-12-12-paris-airbnblistings-select_variables.parquet"))
+airbnb_data_selected <- read_parquet(here::here("inputs/2023-12-12-paris-airbnblistings-select_variables.parquet"))
 ```
 
 ```{r echo=FALSE, results='hide', warning=FALSE}
@@ -62,7 +62,7 @@ The dataset is from Inside Airbnb [@cox_2021]. Data was collected and analyzed u
 
 ### Distribution and properties of individual variables
 
-```{r warning=FALSE, fig.cap="Distribution of prices of London Airbnb rentals in March 2023", fig.width=8, fig.height=10}
+```{r warning=FALSE, fig.cap="Distribution of prices of London Airbnb rentals in March 2023", fig.width=8, fig.height=7.5}
 #| message: false
 #| echo: false
 #| label: fig-1
@@ -95,9 +95,10 @@ combined_plot <- plot1 / plot2
 
 combined_plot
 ```
+We can look at the distribution of prices (@fig-1 .1). There are outliers, so again we might like to consider it on the log scale (@fig-1 .2). 
 
-
-```{r warning=FALSE, fig.cap="Distribution of prices for Airbnb listings in London in March 2023", fig.width=8, fig.height=10}
+\newpage
+```{r warning=FALSE, fig.cap="Distribution of prices for Airbnb listings in London in March 2023", fig.width=8, fig.height=7.5}
 #| message: false
 #| echo: false
 #| label: fig-2
@@ -128,7 +129,7 @@ combined_plot2 <- plot3 / plot4
 
 combined_plot2
 ```
-
+Turning to @fig-2, if we focus on prices that are less than 1,000, then we see that most properties have a nightly price less than 250 (@fig-2 .1). It might be that this is happening around numbers ending in zero or nine. Let us just zoom in on prices between $90 and $210, out of interest, but change the bins to be smaller (@fig-2 .2).
 
 ```{r echo=FALSE, results='hide', warning=FALSE}
 #| message: false
@@ -148,6 +149,7 @@ airbnb_data_no_superhost_nas <-
   )
 ```
 
+\newpage
 ```{r warning=FALSE, fig.cap="Distribution of review scores rating for Paris Airbnb rentals in December 2023"}
 #| message: false
 #| echo: false
@@ -161,6 +163,7 @@ airbnb_data_no_superhost_nas |>
     y = "Number of properties"
   )
 ```
+On Airbnb, guests can give one to five star ratings across a variety of different aspects, including cleanliness, accuracy, value, and others. But when we look at the reviews in our dataset, it is clear that it is effectively a binary, and almost entirely the case that either the rating is five stars or not (@fig-3).
 
 ```{r echo=FALSE, results='hide', warning=FALSE}
 #| message: false
@@ -173,6 +176,7 @@ airbnb_data_no_superhost_nas |>
   table()
 ```
 
+\newpage
 ```{r warning=FALSE, fig.cap="Distribution of review scores for Paris Airbnb rentals in December 2023"}
 #| message: false
 #| echo: false
@@ -187,7 +191,11 @@ airbnb_data_no_superhost_nas |>
     y = "Number of properties"
   )
 ```
+14519 properties do not have a review rating yet because they do not have enough reviews. It is a large proportion of the total so we might like to look at this in more detail using counts. We are interested to see whether there is something systematic happening with these properties. For instance, if the NAs were being driven by, say, some requirement of a minimum number of reviews, then we would expect they would all be missing.
 
+One approach would be to just focus on those that are not missing and the main review score (@fig-4).
+
+\newpage
 ```{r echo=FALSE, results='hide', warning=FALSE}
 #| message: false
 airbnb_data_has_reviews <-
@@ -221,7 +229,9 @@ airbnb_data_has_reviews |>
     y = "Number of properties"
   )
 ```
+There is an issue with NAs as there are a lot of them. For instance, we might be interested to see if there is a relationship with the review score (@fig-5). There are a lot that have an overall review of 100.
 
+\newpage
 ```{r warning=FALSE, fig.cap="Missing values in Paris Airbnb data, by host response time"}
 #| message: false
 #| echo: false
@@ -239,7 +249,9 @@ airbnb_data_has_reviews |>
   ) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 ```
+Usually missing values are dropped by `ggplot2` [@Ggplot2]. We can use `geom_miss_point()` from `naniar` [@naniar] to include them in the graph (@fig-6).
 
+\newpage
 ```{r echo=FALSE, results='hide', warning=FALSE}
 #| message: false
 airbnb_data_selected <-
@@ -260,6 +272,9 @@ airbnb_data_selected |>
     y = "Number of hosts"
   )
 ```
+We might be interested in how many properties a host has on Airbnb (@fig-7). Based on Figure @fig-7 we can see there are a large number who have somewhere in the 100 to 500 properties range, with the usual long tail. The number with that many listings is unexpected and worth following up on. And there are a bunch with NA that we will need to deal with.
+
+\newpage
 
 ### Relationships between variables
 
@@ -274,7 +289,6 @@ airbnb_data_selected <-
   filter(n == 1) |>
   select(-n)
 ```
-
 ```{r warning=FALSE, fig.cap="Relationship between price and review and whether a host is a superhost, for Paris Airbnb rentals in December 2023"}
 #| message: false
 #| echo: false
@@ -292,7 +306,7 @@ airbnb_data_selected |>
   ) +
   scale_color_brewer(palette = "Set1")
 ```
-
+We can look at the relationship between price and reviews, and whether they are a super-host, for properties with more than one review (@fig-8).
 ```{r echo=FALSE, results='hide', warning=FALSE}
 #| message: false
 airbnb_data_selected |>
@@ -301,12 +315,14 @@ airbnb_data_selected |>
     proportion = n / sum(n),
     proportion = round(proportion, digits = 2)
   )
+
 airbnb_data_selected |>
   tabyl(host_response_time, host_is_superhost) |>
   adorn_percentages("col") |>
   adorn_pct_formatting(digits = 0) |>
   adorn_ns() |>
   adorn_title()
+
 airbnb_data_selected |>
   tabyl(neighbourhood_cleansed) |>
   adorn_pct_formatting() |>
@@ -314,6 +330,7 @@ airbnb_data_selected |>
   filter(n > 100) |>
   adorn_totals("row") |>
   head()
+
 logistic_reg_superhost_response_review <-
   glm(
     host_is_superhost ~
@@ -324,11 +341,15 @@ logistic_reg_superhost_response_review <-
   )
 ```
 
+\newpage
 ```{r warning=FALSE, tbl.cap="Explaining whether a host is a superhost based on their response time"}
 #| message: false
 #| echo: false
 #| label: tbl-1
 modelsummary(logistic_reg_superhost_response_review)
 ```
+From @tbl-1, We see that each of the levels is positively associated with the probability of being a superhost. However, having a host that responds within an hour is associated with individuals that are superhosts in our dataset
+
+\newpage
 
 ## References
