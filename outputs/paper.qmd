@@ -62,7 +62,7 @@ The dataset is from Inside Airbnb [@cox_2021]. Data was collected and analyzed u
 
 ### Distribution and properties of individual variables
 
-```{r warning=FALSE, fig.cap="Distribution of prices of London Airbnb rentals in March 2023", fig.width=8, fig.height=7.5}
+```{r warning=FALSE, fig.cap="Distribution of prices of Paris Airbnb rentals in December 2023", fig.width=8, fig.height=7.5}
 #| message: false
 #| echo: false
 #| label: fig-1
@@ -98,7 +98,7 @@ combined_plot
 We can look at the distribution of prices (@fig-1 .1). There are outliers, so again we might like to consider it on the log scale (@fig-1 .2). 
 
 \newpage
-```{r warning=FALSE, fig.cap="Distribution of prices for Airbnb listings in London in March 2023", fig.width=8, fig.height=7.5}
+```{r warning=FALSE, fig.cap="Distribution of prices for Airbnb listings in Paris in December 2023", fig.width=8, fig.height=7.5}
 #| message: false
 #| echo: false
 #| label: fig-2
