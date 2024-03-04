@@ -1,0 +1,334 @@
+---
+title: "Airbnb listings in Paris, France"
+author: "Xu Qi"
+thanks: "Code and data from this analysis are available at: https://github.com/xuqi2002/toronto_library_visit" 
+date: "today"
+date-format: "long" 
+format: pdf
+toc: true
+number-sections: true
+editor: visual
+bibliography: references.bib
+---
+
+```{r}
+#| message: false
+#| echo: false
+
+## Load packages
+library(tidyverse)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(here)
+library(arrow)
+library(patchwork)
+library(naniar)
+library(modelsummary)
+library(janitor)
+
+# Read in cleaned data #
+airbnb_data_selected <- read_parquet(here::here("2023-12-12-paris-airbnblistings-select_variables.parquet"))
+```
+
+```{r echo=FALSE, results='hide', warning=FALSE}
+#| message: false
+airbnb_data_selected$price |>
+  head()
+
+airbnb_data_selected$price |>
+  str_split("") |>
+  unlist() |>
+  unique()
+
+airbnb_data_selected |>
+  select(price) |>
+  filter(str_detect(price, ","))
+
+airbnb_data_selected <-
+  airbnb_data_selected |>
+  mutate(
+    price = str_remove_all(price, "[\\$,]"),
+    price = as.integer(price)
+  )
+```
+## Introduction
+This paper is a exploratory data analysis of Airbnb listings in Paris, France, as at 12 December 2023. 
+
+## Data and Processing
+The dataset is from Inside Airbnb [@cox_2021]. Data was collected and analyzed using the statistical programming software R [@r], with additional support packages including `tidyverse` [@Tidyverse], `ggplot2` [@Ggplot2], `dplyr` [@Dplyr], `janitor` [@Janitor], `knitr` [@knitr] , `naniar` [@naniar] , `patchwork` [@patchwork] , `arrow` [@arrow], `here` [@here] and `modelsummary` [@modelsummary].
+
+## Results
+
+### Distribution and properties of individual variables
+
+```{r warning=FALSE, fig.cap="Distribution of prices of London Airbnb rentals in March 2023", fig.width=8, fig.height=10}
+#| message: false
+#| echo: false
+#| label: fig-1
+plot1 <- airbnb_data_selected |>
+  ggplot(aes(x = price)) +
+  geom_histogram(binwidth = 10) +
+  theme_classic() +
+  labs(
+    title = "Figure 1.1 Distribution of prices",
+    x = "Price per night",
+    y = "Number of properties"
+  )
+
+plot2 <- airbnb_data_selected |>
+  filter(price > 1000) |>
+  ggplot(aes(x = price)) +
+  geom_histogram(binwidth = 10) +
+  theme_classic() +
+  labs(
+    title = "Figure 1.2 Using the log scale for prices more than $1,000",
+    x = "Price per night",
+    y = "Number of properties"
+  ) +
+  scale_y_log10()
+
+plot1 <- plot1 + plot_annotation(tag_levels = 'Distribution of prices', tag_suffix = ") ")
+plot2 <- plot2 + plot_annotation(tag_levels = 'Using the log scale for prices more than $1,000', tag_suffix = ") ")
+
+combined_plot <- plot1 / plot2
+
+combined_plot
+```
+
+
+```{r warning=FALSE, fig.cap="Distribution of prices for Airbnb listings in London in March 2023", fig.width=8, fig.height=10}
+#| message: false
+#| echo: false
+#| label: fig-2
+plot3 <- airbnb_data_selected |>
+  filter(price < 1000) |>
+  ggplot(aes(x = price)) +
+  geom_histogram(binwidth = 10) +
+  theme_classic() +
+  labs(
+    title = "Figure2.1 Prices less than $1,000 suggest some bunching",
+    x = "Price per night",
+    y = "Number of properties"
+  )
+
+plot4 <- airbnb_data_selected |>
+  filter(price > 90) |>
+  filter(price < 210) |>
+  ggplot(aes(x = price)) +
+  geom_histogram(binwidth = 1) +
+  theme_classic() +
+  labs(
+    title = "Figure 2.2 Prices between $90 and $210 illustrate the bunching more clearly",
+    x = "Price per night",
+    y = "Number of properties"
+  )
+
+combined_plot2 <- plot3 / plot4
+
+combined_plot2
+```
+
+
+```{r echo=FALSE, results='hide', warning=FALSE}
+#| message: false
+airbnb_data_less_1000 <-
+  airbnb_data_selected |>
+  filter(price < 1000)
+
+airbnb_data_less_1000 |>
+  filter(is.na(host_is_superhost))
+
+airbnb_data_no_superhost_nas <-
+  airbnb_data_less_1000 |>
+  filter(!is.na(host_is_superhost)) |>
+  mutate(
+    host_is_superhost_binary =
+      as.numeric(host_is_superhost)
+  )
+```
+
+```{r warning=FALSE, fig.cap="Distribution of review scores rating for Paris Airbnb rentals in December 2023"}
+#| message: false
+#| echo: false
+#| label: fig-3
+airbnb_data_no_superhost_nas |>
+  ggplot(aes(x = review_scores_rating)) +
+  geom_bar() +
+  theme_classic() +
+  labs(
+    x = "Review scores rating",
+    y = "Number of properties"
+  )
+```
+
+```{r echo=FALSE, results='hide', warning=FALSE}
+#| message: false
+airbnb_data_no_superhost_nas |>
+  filter(is.na(review_scores_rating)) |>
+  nrow()
+airbnb_data_no_superhost_nas |>
+  filter(is.na(review_scores_rating)) |>
+  select(number_of_reviews) |>
+  table()
+```
+
+```{r warning=FALSE, fig.cap="Distribution of review scores for Paris Airbnb rentals in December 2023"}
+#| message: false
+#| echo: false
+#| label: fig-4
+airbnb_data_no_superhost_nas |>
+  filter(!is.na(review_scores_rating)) |>
+  ggplot(aes(x = review_scores_rating)) +
+  geom_histogram(binwidth = 1) +
+  theme_classic() +
+  labs(
+    x = "Average review score",
+    y = "Number of properties"
+  )
+```
+
+```{r echo=FALSE, results='hide', warning=FALSE}
+#| message: false
+airbnb_data_has_reviews <-
+  airbnb_data_no_superhost_nas |>
+  filter(!is.na(review_scores_rating))
+airbnb_data_has_reviews |>
+  count(host_response_time)
+airbnb_data_has_reviews <-
+  airbnb_data_has_reviews |>
+  mutate(
+    host_response_time = if_else(
+      host_response_time == "N/A",
+      NA_character_,
+      host_response_time
+    ),
+    host_response_time = factor(host_response_time)
+  )
+```
+
+```{r warning=FALSE, fig.cap="Distribution of review scores for properties with NA response time, for Paris Airbnb rentals in December 2023"}
+#| message: false
+#| echo: false
+#| label: fig-5
+airbnb_data_has_reviews |>
+  filter(is.na(host_response_time)) |>
+  ggplot(aes(x = review_scores_rating)) +
+  geom_histogram(binwidth = 1) +
+  theme_classic() +
+  labs(
+    x = "Average review score",
+    y = "Number of properties"
+  )
+```
+
+```{r warning=FALSE, fig.cap="Missing values in Paris Airbnb data, by host response time"}
+#| message: false
+#| echo: false
+#| label: fig-6
+airbnb_data_has_reviews |>
+  ggplot(aes(
+    x = host_response_time,
+    y = review_scores_accuracy
+  )) +
+  geom_miss_point() +
+  labs(
+    x = "Host response time",
+    y = "Review score accuracy",
+    color = "Is missing?"
+  ) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+```
+
+```{r echo=FALSE, results='hide', warning=FALSE}
+#| message: false
+airbnb_data_selected <-
+  airbnb_data_has_reviews |>
+  filter(!is.na(host_response_time))
+```
+
+```{r warning=FALSE, fig.cap="Distribution of the number of properties a host has on Airbnb, for Paris Airbnb rentals in December 2023"}
+#| message: false
+#| echo: false
+#| label: fig-7
+airbnb_data_selected |>
+  ggplot(aes(x = host_total_listings_count)) +
+  geom_histogram() +
+  scale_x_log10() +
+  labs(
+    x = "Total number of listings, by host",
+    y = "Number of hosts"
+  )
+```
+
+### Relationships between variables
+
+```{r echo=FALSE, results='hide', warning=FALSE}
+#| message: false
+airbnb_data_selected |>
+  filter(host_total_listings_count >= 500) |>
+  head()
+airbnb_data_selected <-
+  airbnb_data_selected |>
+  add_count(host_id) |>
+  filter(n == 1) |>
+  select(-n)
+```
+
+```{r warning=FALSE, fig.cap="Relationship between price and review and whether a host is a superhost, for Paris Airbnb rentals in December 2023"}
+#| message: false
+#| echo: false
+#| label: fig-8
+airbnb_data_selected |>
+  filter(number_of_reviews > 1) |>
+  ggplot(aes(x = price, y = review_scores_rating, 
+             color = host_is_superhost)) +
+  geom_point(size = 1, alpha = 0.1) +
+  theme_classic() +
+  labs(
+    x = "Price per night",
+    y = "Average review score",
+    color = "Superhost"
+  ) +
+  scale_color_brewer(palette = "Set1")
+```
+
+```{r echo=FALSE, results='hide', warning=FALSE}
+#| message: false
+airbnb_data_selected |>
+  count(host_is_superhost) |>
+  mutate(
+    proportion = n / sum(n),
+    proportion = round(proportion, digits = 2)
+  )
+airbnb_data_selected |>
+  tabyl(host_response_time, host_is_superhost) |>
+  adorn_percentages("col") |>
+  adorn_pct_formatting(digits = 0) |>
+  adorn_ns() |>
+  adorn_title()
+airbnb_data_selected |>
+  tabyl(neighbourhood_cleansed) |>
+  adorn_pct_formatting() |>
+  arrange(-n) |>
+  filter(n > 100) |>
+  adorn_totals("row") |>
+  head()
+logistic_reg_superhost_response_review <-
+  glm(
+    host_is_superhost ~
+      host_response_time +
+      review_scores_rating,
+    data = airbnb_data_selected,
+    family = binomial
+  )
+```
+
+```{r warning=FALSE, tbl.cap="Explaining whether a host is a superhost based on their response time"}
+#| message: false
+#| echo: false
+#| label: tbl-1
+modelsummary(logistic_reg_superhost_response_review)
+```
+
+## References
